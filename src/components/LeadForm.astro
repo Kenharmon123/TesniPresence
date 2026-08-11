@@ -1,7 +1,11 @@
 ---
 import { activeDomain } from '../config/domains';
-const endpoint = import.meta.env.PUBLIC_LEAD_ENDPOINT ?? '';
-const action = endpoint || '/contact';
+// Default to the live Tesni Agents endpoint so a missing env var in any one of the
+// four Vercel projects cannot silently turn the form into a no-op. Override with
+// PUBLIC_LEAD_ENDPOINT for staging or a self-hosted Agents instance.
+const LEAD_ENDPOINT_DEFAULT = 'https://tqbvhikiicrkcegqyqtd.supabase.co/functions/v1/capture-lead';
+const endpoint = import.meta.env.PUBLIC_LEAD_ENDPOINT || LEAD_ENDPOINT_DEFAULT;
+const action = endpoint;
 const formId = Astro.props.formId ?? 'lead-form';
 ---
 <form id={formId} class="lead-form surface" action={action} method="post" novalidate data-lead-form>
