@@ -11,7 +11,16 @@ const legacyArticles: PublishedAsset[] = blogPosts.map((post) => ({
   payload: { meta_title: post.title + ' | Tesni, LLC', meta_description: post.description, sections: post.body.map((body, sectionIndex) => ({ heading: sectionIndex === 0 ? 'Overview' : `What to consider`, body })), key_takeaways: [], faq: [], schema_jsonld: { '@context': 'https://schema.org', '@type': 'BlogPosting', headline: post.title, description: post.description, datePublished: post.datePublished, dateModified: post.dateModified ?? post.datePublished, author: { '@type': 'Organization', name: post.author } }, },
 }));
 let remoteCache: Promise<PublishedAsset[]> | undefined;
-const fallbackAssets = (): PublishedAsset[] => [...legacyArticles, ...sampleAssets];
+// The ported articles and sample assets are all business-lending content written for
+// Tesni, LLC. Serving them as a fallback on every brand meant the outdoor-products
+// store published SBA and DSCR loan articles, and the residential mortgage brand
+// published business-lending articles. Publishing nothing is better than publishing
+// content for the wrong business, so only lending brands get the fallback. The other
+// brands render an empty blog until Tesni Agents has published campaign assets
+// against their domain_id, which is the intended source for this content.
+const lendingVerticals = ['business-lending', 'commercial-lending'];
+const fallbackAssets = (): PublishedAsset[] =>
+  lendingVerticals.includes(activeDomain.vertical) ? [...legacyArticles, ...sampleAssets] : [];
 const normalize = (row: Record<string, unknown>): PublishedAsset | null => {
   const payload = typeof row.payload === 'object' && row.payload !== null ? row.payload as PublishedAsset['payload'] : {};
   const title = typeof row.title === 'string' ? row.title : '';
