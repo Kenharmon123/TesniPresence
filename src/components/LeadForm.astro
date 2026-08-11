@@ -7,14 +7,15 @@ const LEAD_ENDPOINT_DEFAULT = 'https://tqbvhikiicrkcegqyqtd.supabase.co/function
 const endpoint = import.meta.env.PUBLIC_LEAD_ENDPOINT || LEAD_ENDPOINT_DEFAULT;
 const action = endpoint;
 const formId = Astro.props.formId ?? 'lead-form';
+const copy = activeDomain.copy;
 ---
 <form id={formId} class="lead-form surface" action={action} method="post" novalidate data-lead-form>
   <input type="hidden" name="domain" value={activeDomain.domain} /><input type="hidden" name="started_at" value="" data-started-at />
   <div class="honeypot" aria-hidden="true"><label>Leave this field empty <input tabindex="-1" autocomplete="off" name="company_website" /></label></div>
-  <h2>Request a consultation</h2><p class="muted">Tell us about your project. Submitting this form does not authorize a credit pull.</p>
+  <h2>{copy.formHeading}</h2><p class="muted">{copy.formNote}</p>
   <div class="form-grid"><label>Full name <input name="name" autocomplete="name" required /></label><label>Business name <input name="business" autocomplete="organization" /></label><label>Email <input name="email" autocomplete="email" type="email" required /></label><label>Phone <input name="phone" autocomplete="tel" type="tel" /></label></div>
-  <label>What can we help with?<select name="interest"><option>SBA loan</option><option>Business line of credit</option><option>Commercial real estate loan</option><option>DSCR loan</option><option>Real estate investment loan</option><option>Not sure yet</option></select></label>
-  <label>Tell us about your project <textarea name="message" rows="5" required></textarea></label>
+  <label>{copy.interestLabel}<select name="interest">{copy.interestOptions.map((o) => <option>{o}</option>)}</select></label>
+  <label>{copy.messageLabel} <textarea name="message" rows="5" required></textarea></label>
   <p class="form-status" aria-live="polite"></p><button class="button" type="submit">Send message</button>
   <p class="fine-print">{activeDomain.legalDisclaimer}</p>
 </form>
