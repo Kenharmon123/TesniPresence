@@ -22,16 +22,20 @@ const lendingFaqs = [
 // corrects the services pages, location pages, FAQ page and both sitemaps at once.
 // Before this, all four brands published the business-lending set, which meant the
 // outdoor-products store advertised SBA and DSCR loans.
+// Selection is explicit per vertical rather than defaulting to the lending set. A new
+// brand added with vertical 'generic' gets empty content and renders no service,
+// location or FAQ entries until real ones exist. Defaulting to lending is what caused
+// the outdoor store to advertise SBA and DSCR loans, so an unknown vertical must
+// produce nothing rather than someone else's regulated content.
 const v = activeDomain.vertical;
-export const services: Service[] =
-  v === 'outdoor-retail' ? outdoorServices
-  : v === 'residential-mortgage' ? residentialServices
-  : lendingServices;
-export const locations: Location[] =
-  v === 'outdoor-retail' ? outdoorLocations
-  : v === 'residential-mortgage' ? residentialLocations
-  : lendingLocations;
-export const generalFaqs: { q: string; a: string }[] =
-  v === 'outdoor-retail' ? outdoorFaqs
-  : v === 'residential-mortgage' ? residentialFaqs
-  : lendingFaqs;
+const byVertical = {
+  'business-lending': { services: lendingServices, locations: lendingLocations, faqs: lendingFaqs },
+  'commercial-lending': { services: lendingServices, locations: lendingLocations, faqs: lendingFaqs },
+  'outdoor-retail': { services: outdoorServices, locations: outdoorLocations, faqs: outdoorFaqs },
+  'residential-mortgage': { services: residentialServices, locations: residentialLocations, faqs: residentialFaqs },
+  generic: { services: [], locations: [], faqs: [] },
+} as const;
+const selected = byVertical[v] ?? byVertical.generic;
+export const services: Service[] = selected.services;
+export const locations: Location[] = selected.locations;
+export const generalFaqs: { q: string; a: string }[] = selected.faqs;

@@ -20,7 +20,7 @@ export type DomainCopy = {
 // Which content set a brand publishes. Previously every brand rendered the same
 // business-lending services, locations and FAQs, so the outdoor-products store was
 // publishing SBA and DSCR loan pages and asking "Is Tesni, LLC a direct lender?".
-export type Vertical = 'business-lending' | 'commercial-lending' | 'outdoor-retail' | 'residential-mortgage';
+export type Vertical = 'business-lending' | 'commercial-lending' | 'outdoor-retail' | 'residential-mortgage' | 'generic';
 export type DomainConfig = {
   domain: string; siteName: string; tagline: string; description: string; brand: BrandColors; logoPath: string;
   contact: ContactDetails; socialProfiles: string[]; organizationId: string; domainId: string; gaId: string;
@@ -138,6 +138,50 @@ const residentialCopy = (siteName: string): DomainCopy => ({
   locationEyebrow: 'Local home loans', locationLinkPrefix: 'Home loans in',
   privacyPurpose: 'respond to inquiries, explain program options, prepare the information needed for an application submitted through Loan Factory, and follow up about next steps',
 });
+
+// A neutral profile for onboarding another business or website onto Presence without
+// writing a bespoke content set first. Everything is derived from the brand's own
+// name and offering noun, so a new tenant is a config entry plus a `domains` row in
+// Tesni Agents. Services, locations and FAQs start empty and the pages render without
+// them; fill them by publishing campaign assets from Agents against this domain, or by
+// adding a dedicated vertical when the business earns one.
+// Deliberately contains no lending, mortgage or credit language, so a generic tenant
+// can never inherit another brand's regulated wording.
+export const genericCopy = (siteName: string, offering = 'services'): DomainCopy => ({
+  contactTitle: `Contact ${siteName}`,
+  contactDescription: `Get in touch with ${siteName} about ${offering}.`,
+  contactHeading: 'Get in touch',
+  contactLead: 'Tell us what you need and when you need it. Sending this creates no obligation.',
+  formHeading: 'Send a message',
+  formNote: 'Tell us what you are looking for and we will follow up.',
+  messageLabel: 'How can we help?',
+  interestLabel: 'What is this about?',
+  interestOptions: ['General enquiry', 'Pricing', 'Availability', 'Existing order or account', 'Something else'],
+  industriesHeading: 'Areas we serve near',
+  servicesTitle: `${siteName} ${offering}`,
+  servicesDescription: `What ${siteName} offers, and how to get started.`,
+  servicesHeading: 'What we offer',
+  servicesLead: 'What we offer and who each option suits best.',
+  locationsTitle: 'Areas We Serve',
+  locationsDescription: `Where ${siteName} works and how to reach us.`,
+  locationsLead: 'works with customers across these areas. Local pages cover what we see most often in each one.',
+  faqTitle: 'Frequently Asked Questions',
+  faqDescription: `Answers to common questions about working with ${siteName}.`,
+  faqLead: 'Common questions from people who work with',
+  blogTitle: 'Updates',
+  blogDescription: `News, guides and updates from ${siteName}.`,
+  blogLead: 'News, guides and updates.',
+  servicesH1: 'What we offer', faqH1: 'Frequently asked questions', blogH1: 'Updates',
+  locationH1: `${siteName} in`, podcastLead: 'Short practical conversations about our work.',
+  homeProgramsH2: 'What we offer',
+  homeProgramsIntro: 'A short overview of what we do and how to get started.',
+  privacySharingH2: 'Sharing with service providers',
+  privacySharingBody: 'We share your details only with the providers needed to answer your enquiry or fulfil your request. Each handles that information under its own privacy policy.',
+  termsDisclaimerH2: 'Terms of use',
+  locationTitlePrefix: `${siteName} in`, locationDescription: `${siteName} serving customers in`,
+  locationEyebrow: 'Local', locationLinkPrefix: 'Serving',
+  privacyPurpose: 'respond to enquiries, answer questions about what we offer, and follow up about next steps',
+});
 // Real tenant identifiers from the Tesni Agents database (project tqbvhikiicrkcegqyqtd).
 // These are not secrets — they are opaque row identifiers, and all tenant access is
 // enforced by RLS on the Agents side. They must match `domains` and `organizations`
@@ -219,6 +263,17 @@ export const domains = {
 } satisfies Record<string, DomainConfig>;
 export type DomainKey = keyof typeof domains;
 const requested = import.meta.env.PUBLIC_TESNI_DOMAIN ?? 'tesnillc.com';
-export const activeDomain: DomainConfig = domains[requested as DomainKey] ?? domains['tesnillc.com'];
+// Fail the build on an unrecognized domain instead of falling back to Tesni, LLC.
+// The silent fallback shipped Tesni, LLC branding and business-lending content to all
+// four sites once already, because the Vercel projects had no environment variables
+// set. On a mortgage or a client-owned domain that is a compliance incident, not a
+// cosmetic bug, so a typo in PUBLIC_TESNI_DOMAIN must stop the build.
+if (!(requested in domains)) {
+  throw new Error(
+    `PUBLIC_TESNI_DOMAIN="${requested}" is not a configured brand. Known brands: ${Object.keys(domains).join(', ')}. ` +
+    'Refusing to build rather than silently serving another brand\'s content on this domain.',
+  );
+}
+export const activeDomain: DomainConfig = domains[requested as DomainKey];
 export const siteUrl = `https://${activeDomain.domain}`;
 export const absoluteUrl = (path = '/') => new URL(path, `${siteUrl}/`).toString().replace(/\/$/, path === '/' ? '/' : '');
