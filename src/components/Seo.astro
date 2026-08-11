@@ -1,0 +1,18 @@
+---
+import { activeDomain, absoluteUrl, siteUrl } from '../config/domains';
+export interface Props { title: string; description: string; path?: string; type?: 'website' | 'article'; image?: string; noindex?: boolean; jsonLd?: Record<string, unknown>[]; publishedTime?: string; modifiedTime?: string; }
+const { title, description, path = '/', type = 'website', image = absoluteUrl('/og-image.svg'), noindex = false, jsonLd = [], publishedTime, modifiedTime } = Astro.props;
+const canonical = absoluteUrl(path);
+const organization = { '@context':'https://schema.org', '@type':'Organization', '@id':`${siteUrl}/#organization`, name:activeDomain.siteName, url:siteUrl, logo:absoluteUrl(activeDomain.logoPath), description:activeDomain.description, email:activeDomain.contact.email, ...(activeDomain.contact.phone ? {telephone:activeDomain.contact.phone}:{}), ...(activeDomain.contact.address ? {address:{'@type':'PostalAddress',streetAddress:activeDomain.contact.address,addressLocality:activeDomain.contact.city,addressRegion:activeDomain.contact.region,postalCode:activeDomain.contact.postalCode,addressCountry:'US'}}:{}), sameAs:activeDomain.socialProfiles };
+const website = { '@context':'https://schema.org', '@type':'WebSite', '@id':`${siteUrl}/#website`, name:activeDomain.siteName, url:siteUrl, publisher:{'@id':`${siteUrl}/#organization`} };
+const local = activeDomain.isLocalBusiness ? { '@context':'https://schema.org', '@type':'LocalBusiness', '@id':`${canonical}#localbusiness`, name:activeDomain.siteName, url:canonical, ...(activeDomain.contact.phone ? {telephone:activeDomain.contact.phone}:{}), ...(activeDomain.contact.address ? {address:{'@type':'PostalAddress',streetAddress:activeDomain.contact.address,addressLocality:activeDomain.contact.city,addressRegion:activeDomain.contact.region,postalCode:activeDomain.contact.postalCode,addressCountry:'US'}}:{}), image } : null;
+const allJsonLd = [organization, website, ...(local ? [local] : []), ...jsonLd];
+---
+<title>{title}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+<meta name="robots" content={noindex ? 'noindex,nofollow' : 'index,follow,max-snippet:-1,max-image-preview:large'} />
+<meta property="og:type" content={type} /><meta property="og:site_name" content={activeDomain.siteName} /><meta property="og:title" content={title} /><meta property="og:description" content={description} /><meta property="og:url" content={canonical} /><meta property="og:image" content={image} />
+<meta name="twitter:card" content="summary_large_image" /><meta name="twitter:title" content={title} /><meta name="twitter:description" content={description} /><meta name="twitter:image" content={image} />
+{publishedTime && <meta property="article:published_time" content={publishedTime} />}{modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+{allJsonLd.map((schema) => <script is:inline type="application/ld+json" set:html={JSON.stringify(schema)} />)}

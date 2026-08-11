@@ -1,0 +1,5 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'; import { activeDomain } from '../../config/domains'; import { getPodcastEpisodes } from '../../lib/content'; import { breadcrumbs } from '../../lib/schema';
+const episodes=await getPodcastEpisodes();
+---
+<BaseLayout title={`${activeDomain.siteName} Podcast`} description={`Short, practical conversations from ${activeDomain.siteName}.`} path="/podcast" jsonLd={[breadcrumbs([['Home','/'],['Podcast','/podcast']])]}><section class="section"><div class="wrap"><p class="eyebrow">Podcast</p><h1>{activeDomain.siteName} Brief</h1><p class="lead">Short practical conversations about financing preparation and lending decisions.</p><div class="article-list">{episodes.map((episode)=><article><h2><a href={`/podcast/${episode.slug}`}>{episode.title}</a></h2><p>{episode.summary}</p><p class="meta">{new Date(episode.publishedAt).toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}</p><a href={`/podcast/${episode.slug}`}>Listen to episode →</a></article>)}</div></div></section></BaseLayout>

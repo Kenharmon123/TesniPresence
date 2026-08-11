@@ -1,0 +1,7 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'; import { services } from '../../data/tesni'; import { activeDomain } from '../../config/domains'; import { breadcrumbs, serviceSchema } from '../../lib/schema';
+export function getStaticPaths(){return services.map((service)=>({params:{slug:service.slug},props:{service}}));}
+const { service } = Astro.props;
+const path = `/services/${service.slug}`;
+---
+<BaseLayout title={`${service.name} | ${activeDomain.siteName}`} description={service.description} {path} jsonLd={[breadcrumbs([['Home','/'],['Services','/services'],[service.name,path]]),serviceSchema(service.name,service.description,path)]}><article class="prose"><p class="eyebrow">Service</p><h1>{service.name}</h1><p>{service.longDescription}</p><h2>Highlights</h2><ul>{service.highlights.map((item:string)=><li>{item}</li>)}</ul><h2>Common uses of funds</h2><ul>{service.uses.map((item:string)=><li>{item}</li>)}</ul><h2>What to know before applying</h2><ul>{service.considerations.map((item:string)=><li>{item}</li>)}</ul><p class="fine-print">{activeDomain.legalDisclaimer}</p><p><a class="button" href="/contact">Discuss your project</a></p></article></BaseLayout>
