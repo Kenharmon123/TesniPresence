@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import { activeDomain } from '../config/domains';
 import { blogPosts } from '../data/blogPosts';
 import { sampleAssets } from '../content/samples';
@@ -30,13 +29,35 @@ const normalize = (row: Record<string, unknown>): PublishedAsset | null => {
 };
 const slugify = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 async function getRemoteAssets(): Promise<PublishedAsset[]> {
-  const url = import.meta.env.PUBLIC_SUPABASE_URL; const anon = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  // Read import.meta.env first (Vite inlines .env values at build) but fall back to
+  // process.env, because on a CI/host build the variables arrive as real process env
+  // and are not guaranteed to be inlined.
+  const env = typeof process !== 'undefined' && process.env ? process.env : ({} as Record<string, string | undefined>);
+  const url = import.meta.env.PUBLIC_SUPABASE_URL || env.PUBLIC_SUPABASE_URL;
+  const anon = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || env.PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anon || activeDomain.domainId === 'SET_IN_AGENTS') { console.warn('[presence] Published-content source is not configured; using local samples and ported Tesni articles.'); return fallbackAssets(); }
+  // Deliberately a plain REST fetch rather than @supabase/supabase-js. The JS client
+  // pulls in realtime, which throws "Node.js 20 detected without native WebSocket
+  // support" during the static build. That throw was caught below and silently
+  // downgraded to the fallback, so every brand rendered an empty blog even though
+  // the data was there and publicly readable. A read this simple does not need a client.
   try {
-    const supabase = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data, error } = await supabase.from('campaign_assets').select('id,campaign_id,organization_id,format,title,summary,body,payload,media_urls,created_at,updated_at,campaigns!inner(name,domain_id)').eq('status', 'published').eq('campaigns.domain_id', activeDomain.domainId).order('updated_at', { ascending: false });
-    if (error) throw error;
-    const remote = (data ?? []).map((row) => normalize(row as Record<string, unknown>)).filter((asset): asset is PublishedAsset => asset !== null);
+    const select = 'id,campaign_id,organization_id,format,title,summary,body,payload,media_urls,created_at,updated_at,campaigns!inner(name,domain_id)';
+    const endpoint = `${url.replace(/\/$/, '')}/rest/v1/campaign_assets`
+      // PostgREST embed syntax (campaigns!inner(...)) must NOT be percent-encoded;
+      // encoding it makes the request fail auth rather than returning a query error.
+      + `?select=${select}`
+      + `&status=eq.published`
+      + `&campaigns.domain_id=eq.${encodeURIComponent(activeDomain.domainId)}`
+      + `&order=updated_at.desc`;
+    const response = await fetch(endpoint, { headers: { apikey: anon, Authorization: `Bearer ${anon}` } });
+    if (!response.ok) {
+      // Include the key length, never the key. A truncated or wrong-length anon key is
+      // the usual cause of a 401 here and is otherwise invisible in build logs.
+      throw new Error(`Published-content request returned HTTP ${response.status} (anon key length ${String(anon).length})`);
+    }
+    const data = (await response.json()) as Record<string, unknown>[];
+    const remote = (data ?? []).map((row) => normalize(row)).filter((asset): asset is PublishedAsset => asset !== null);
     if (!remote.length) { console.warn('[presence] No published campaign assets were returned; using local samples and ported Tesni articles.'); return fallbackAssets(); }
     return remote;
   } catch (error) { console.warn('[presence] Published-content request failed; using local samples and ported Tesni articles.', error); return fallbackAssets(); }
