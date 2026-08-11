@@ -7,10 +7,14 @@ export type DomainCopy = {
   contactTitle: string; contactDescription: string; contactHeading: string; contactLead: string;
   formHeading: string; formNote: string; messageLabel: string; interestLabel: string; interestOptions: string[];
 };
+// Which content set a brand publishes. Previously every brand rendered the same
+// business-lending services, locations and FAQs, so the outdoor-products store was
+// publishing SBA and DSCR loan pages and asking "Is Tesni, LLC a direct lender?".
+export type Vertical = 'business-lending' | 'commercial-lending' | 'outdoor-retail' | 'residential-mortgage';
 export type DomainConfig = {
   domain: string; siteName: string; tagline: string; description: string; brand: BrandColors; logoPath: string;
   contact: ContactDetails; socialProfiles: string[]; organizationId: string; domainId: string; gaId: string;
-  isLocalBusiness: boolean; legalDisclaimer: string; copy: DomainCopy;
+  isLocalBusiness: boolean; legalDisclaimer: string; copy: DomainCopy; vertical: Vertical;
 };
 const lendingCopy = (siteName: string): DomainCopy => ({
   contactTitle: `Contact ${siteName} | Business Lending Consultations`,
@@ -23,7 +27,25 @@ const lendingCopy = (siteName: string): DomainCopy => ({
   interestLabel: 'What can we help with?',
   interestOptions: ['SBA loan', 'Business line of credit', 'Commercial real estate loan', 'DSCR loan', 'Real estate investment loan', 'Not sure yet'],
 });
-const mortgageCopy = (siteName: string): DomainCopy => ({
+// Commercial and investment lending. Deliberately NOT residential mortgage: Tesni
+// Capital and Tesni, LLC do business and investment lending, which carries different
+// compliance obligations than consumer mortgage origination. Do not add consumer
+// mortgage wording, NMLS IDs, or Equal Housing text to these brands.
+const commercialCopy = (siteName: string): DomainCopy => ({
+  contactTitle: `Contact ${siteName} | Business and Investment Property Lending`,
+  contactDescription: `Talk with ${siteName} about commercial real estate financing, investment property loans, DSCR loans, and business credit.`,
+  contactHeading: 'Talk through your financing project',
+  contactLead: 'Tell us about the property or business, your timeline, and what you are trying to accomplish. Sharing initial information does not authorize a credit pull and creates no obligation to apply.',
+  formHeading: 'Request a consultation',
+  formNote: 'Tell us about the deal you are working on. Submitting this form does not authorize a credit pull.',
+  messageLabel: 'Tell us about the property or business',
+  interestLabel: 'What can we help with?',
+  interestOptions: ['Commercial real estate loan', 'Investment or rental property', 'DSCR loan', 'Bridge or short-term financing', 'Business line of credit', 'SBA loan', 'Not sure yet'],
+});
+// Residential mortgage only. This brand is the one that operates under Ken Harmon's
+// NMLS registration, so it is the only brand that carries the NMLS ID and the Equal
+// Housing Opportunity statement.
+const residentialCopy = (siteName: string): DomainCopy => ({
   contactTitle: `Contact ${siteName} | Mortgage Questions and Loan Planning`,
   contactDescription: `Talk with ${siteName} about a home purchase, refinance, or investment property loan.`,
   contactHeading: 'Talk through your home loan',
@@ -32,7 +54,7 @@ const mortgageCopy = (siteName: string): DomainCopy => ({
   formNote: 'Tell us what you are planning. Submitting this form does not authorize a credit pull.',
   messageLabel: 'Tell us about your plans',
   interestLabel: 'What can we help with?',
-  interestOptions: ['Buying a home', 'Refinancing', 'Investment or rental property', 'DSCR loan', 'Cash-out refinance', 'Not sure yet'],
+  interestOptions: ['Buying a home', 'Refinancing', 'Cash-out refinance', 'FHA or VA loan', 'Investment or rental property', 'Not sure yet'],
 });
 // Real tenant identifiers from the Tesni Agents database (project tqbvhikiicrkcegqyqtd).
 // These are not secrets — they are opaque row identifiers, and all tenant access is
@@ -47,17 +69,17 @@ export const domains = {
     contact: { phone: '+1-877-836-7642', phoneHref: '+18778367642', email: 'ken@tesnillc.com', address: '5900 Balcones Drive, Suite 100', city: 'Austin', region: 'TX', postalCode: '78731' },
     socialProfiles: ['https://www.linkedin.com/company/tesni-llc', 'https://www.facebook.com/tesnillc'],
     organizationId: '0aebe0f3-4ccd-4566-b2eb-35b3340f1bb8', domainId: '47326d0c-5103-40bf-b1a5-ccd6250b00cc',
-    copy: lendingCopy('Tesni, LLC'),
+    vertical: 'business-lending', copy: lendingCopy('Tesni, LLC'),
     isLocalBusiness: true, legalDisclaimer: 'Tesni, LLC is a U.S. business lending marketplace and broker. We are not a direct lender. We do not approve loans, fund loans, or set interest rates. All credit decisions are made by third-party lenders subject to their own underwriting guidelines. Programs, rates, and terms change frequently and are not guaranteed. Equal opportunity in lending.',
   },
   'tesnicapital.com': {
-    ...common, domain: 'tesnicapital.com', siteName: 'Tesni Capital', tagline: 'Mortgage and commercial real estate lending.',
-    description: 'Tesni Capital provides mortgage and commercial real estate lending guidance for borrowers evaluating a purchase, refinance, or investment property.',
+    ...common, domain: 'tesnicapital.com', siteName: 'Tesni Capital', tagline: 'Business and commercial real estate lending.',
+    description: 'Tesni Capital provides business and investment property lending guidance, including commercial real estate financing, DSCR loans, and business credit.',
     brand: { primary: '#1f4b45', accent: '#b7791f', ink: '#12211d', paper: '#fbfaf7' }, logoPath: '/logos/tesni-capital.svg',
     contact: { phone: '', phoneHref: '', email: 'ken@tesnillc.com', address: '', city: '', region: 'TX', postalCode: '' }, socialProfiles: [],
     organizationId: 'a0726567-8c25-43e9-b71d-813f2a6416c8', domainId: '58062811-3f2d-4593-b27f-1ab4fa91fea6',
-    copy: mortgageCopy('Tesni Capital'),
-    isLocalBusiness: false, legalDisclaimer: 'Loan programs, rates, and terms are subject to change and borrower qualification. This site provides general information, not a commitment to lend.',
+    vertical: 'commercial-lending', copy: commercialCopy('Tesni Capital'),
+    isLocalBusiness: false, legalDisclaimer: 'Tesni Capital arranges business-purpose and investment property financing and is not a residential mortgage lender. Loan programs, rates, and terms are subject to change and borrower qualification. This site provides general information, not a commitment to lend.',
   },
   'tesnioutdoorliving.com': {
     ...common, domain: 'tesnioutdoorliving.com', siteName: 'Tesni Outdoor Living', tagline: 'Outdoor living for Texas homes.',
@@ -65,6 +87,7 @@ export const domains = {
     brand: { primary: '#31503a', accent: '#bf6d36', ink: '#1d2d21', paper: '#faf6ed' }, logoPath: '/logos/tesni-outdoor.svg',
     contact: { phone: '', phoneHref: '', email: 'ken@tesnillc.com', address: '', city: '', region: 'TX', postalCode: '' }, socialProfiles: [],
     organizationId: '5172ee66-b0bc-4232-af52-d2f24542485f', domainId: '2e6c2605-386c-484d-87c5-9f2d2bfb94ba',
+    vertical: 'outdoor-retail',
     copy: {
       contactTitle: 'Contact Tesni Outdoor Living | Pergolas, Gazebos and Play Sets',
       contactDescription: 'Talk with Tesni Outdoor Living about pergolas, grill gazebos, outdoor kitchens, and play sets for your Texas backyard.',
@@ -84,8 +107,8 @@ export const domains = {
     brand: { primary: '#294b6d', accent: '#b7791f', ink: '#172838', paper: '#fbfaf7' }, logoPath: '/logos/4yourhome.svg',
     contact: { phone: '', phoneHref: '', email: 'Ken.Harmon@LoanFactory.com', address: '', city: '', region: 'TX', postalCode: '' }, socialProfiles: [],
     organizationId: '4f97a2de-f026-427d-b204-e80ced8dffe9', domainId: '175ffb5b-d406-4b22-b35a-540b5e8be0bc',
-    copy: mortgageCopy('4 Your Home Loan'),
-    isLocalBusiness: false, legalDisclaimer: 'This information is for educational purposes and is not a commitment to lend. Loan approval, rates, fees, and terms depend on borrower qualification and program availability.',
+    vertical: 'residential-mortgage', copy: residentialCopy('4 Your Home Loan'),
+    isLocalBusiness: false, legalDisclaimer: 'Ken Harmon, NMLS #921561. Equal Housing Opportunity. This information is for educational purposes and is not a commitment to lend. Loan approval, rates, fees, and terms depend on borrower qualification and program availability. 4 Your Home Loan is operated separately from Tesni, LLC and Tesni Capital; residential mortgage applications are submitted through Loan Factory.',
   },
 } satisfies Record<string, DomainConfig>;
 export type DomainKey = keyof typeof domains;
